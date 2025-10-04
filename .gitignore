@@ -1,4 +1,4 @@
-/template
+/templates/
 exoplanet_model_demo.pkl
 feature_names_demo.pkl
 scaler_demo.pkl
