@@ -128,3 +128,74 @@ footer {
     border: 1px solid #388bfd;
     color: #79c0ff;
 }
+/* static/css/style.css - Add this at the end */
+.metrics-card {
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+.metrics-card h3 {
+    text-align: center;
+    margin-top: 0;
+    color: #58a6ff;
+}
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    text-align: center;
+}
+.metric-item h4 {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: #8b949e;
+}
+.metric-item p {
+    margin-top: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #c9d1d9;
+}
+/* static/css/style.css - Add this at the end */
+.slider-card, .plot-card {
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+.slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    background: #30363d;
+    border-radius: 5px;
+    outline: none;
+}
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #58a6ff;
+    cursor: pointer;
+    border-radius: 50%;
+}
+#thresholdValue {
+    font-weight: bold;
+    color: #58a6ff;
+    min-width: 40px;
+}
+.plot-card img {
+    max-width: 100%;
+    border-radius: 6px;
+    margin-top: 1rem;
+}

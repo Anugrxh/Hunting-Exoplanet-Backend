@@ -143,64 +143,247 @@
 #     app.run(debug=True)
 
 #==========UPDATED CODE WITH MULTI CLASS CLASSIFICATION================
+# from flask import Flask, render_template, request
+# import joblib
+# import pandas as pd
+# import numpy as np
+# import json 
+# import matplotlib.pyplot as plt
+# import numpy as np
+# import io
+# import base64
+
+# app = Flask(__name__)
+
+# def create_light_curve(duration, depth):
+#     """Generates a simplified, simulated light curve plot."""
+#     try:
+#         # Create a time series
+#         time = np.linspace(-10, 10, 500)
+#         flux = np.ones_like(time)
+        
+#         # Create the transit dip
+#         transit_start = -duration / 2
+#         transit_end = duration / 2
+#         flux[(time > transit_start) & (time < transit_end)] -= depth / 1e6 # Depth is in parts per million
+
+#         # Add a bit of noise
+#         flux += np.random.normal(0, 0.00005, size=flux.shape)
+
+#         # Create the plot
+#         fig, ax = plt.subplots(figsize=(8, 4), facecolor='#161b22')
+#         ax.plot(time, flux, '.', color='#79c0ff', markersize=3)
+#         ax.set_facecolor('#161b22')
+#         ax.set_xlabel("Time from Transit Center (Hours)", color='white')
+#         ax.set_ylabel("Relative Brightness (Flux)", color='white')
+#         ax.tick_params(axis='x', colors='white')
+#         ax.tick_params(axis='y', colors='white')
+#         for spine in ax.spines.values():
+#             spine.set_edgecolor('white')
+
+#         # Save plot to a memory buffer
+#         buf = io.BytesIO()
+#         fig.savefig(buf, format='png', transparent=True)
+#         buf.seek(0)
+        
+#         # Encode buffer to a base64 string to embed in HTML
+#         plot_url = base64.b64encode(buf.getvalue()).decode('utf8')
+#         plt.close(fig)
+#         return plot_url
+#     except Exception:
+#         return None
+# # --- UPDATED SECTION ---
+# # Load the new MULTI-CLASS model and its helper files
+# try:
+#     model = joblib.load('model_multiclass.pkl')
+#     scaler = joblib.load('scaler_multiclass.pkl')
+#     feature_names = joblib.load('feature_names_multiclass.pkl')
+#     print("Multi-class model and helper files loaded successfully.")
+# except FileNotFoundError:
+#     print("Error: Multi-class model files not found. Please run the updated training notebook first.")
+#     model, scaler, feature_names = None, None, None
+# # ---------------------
+
+# @app.route('/')
+# def home():
+#     if not feature_names:
+#         return "Error: Model not trained or files not found.", 500
+#     try:
+#         with open('metrics.json', 'r') as f:
+#             metrics = json.load(f)
+#     except FileNotFoundError:
+#         metrics = None # Handle case where file might be missing
+    
+#     return render_template('index.html', features=feature_names, metrics=metrics)
+
+# @app.route('/predict', methods=['POST'])
+# def predict():
+#     if not model:
+#         return "Error: Model not loaded.", 500
+
+#     try:
+#         data_dict = {feature: [float(request.form.get(feature))] for feature in feature_names}
+#         input_df = pd.DataFrame.from_dict(data_dict)
+#         input_scaled = scaler.transform(input_df)
+#         print("mode: ",model)
+#         print("inpute df: ",input_df)
+#         print("input scaled: ",input_scaled)
+#         # --- CHANGE: Logic for multi-class prediction ---
+#         prediction_num = model.predict(input_scaled)[0] # Get the predicted class (0, 1, or 2)
+#         prediction_proba = model.predict_proba(input_scaled)[0] # Get probabilities for all classes
+#         print("predict num: ",prediction_num)
+#         print("pridiction_proba: ",prediction_proba)
+#         # Define the class labels in the correct order
+#         class_labels = ['False Positive', 'Planetary Candidate', 'Confirmed Exoplanet']
+        
+#         # Get the label and confidence for the predicted class
+#         result_text = class_labels[prediction_num]
+#         confidence = prediction_proba[prediction_num] * 100
+#         # -----------------------------------------------
+
+#         return render_template('results.html', 
+#                                prediction=result_text, 
+#                                confidence=f"{confidence:.2f}%")
+
+#     except (ValueError, TypeError):
+#         return "Error: Invalid input. Please ensure all fields are filled with numbers.", 400
+#     except Exception as e:
+#         return f"An unexpected error occurred: {e}", 500
+
+# if __name__ == '__main__':
+#     app.run(debug=True)
+
+##==========MATRIX FOR DATA VISUALIZATION============
+
+# app.py
+
+# --- Core Flask and ML Imports ---
 from flask import Flask, render_template, request
 import joblib
 import pandas as pd
 import numpy as np
+import json
 
+# --- Imports for Stretch Goals (Plotting) ---
+import matplotlib
+matplotlib.use('Agg') # A non-interactive backend for Matplotlib
+import matplotlib.pyplot as plt
+import io
+import base64
+
+# Initialize the Flask application
 app = Flask(__name__)
 
-# --- UPDATED SECTION ---
-# Load the new MULTI-CLASS model and its helper files
+# --- Load Model and Helper Files ---
 try:
+    # Load the multi-class model and its corresponding helper files
     model = joblib.load('model_multiclass.pkl')
     scaler = joblib.load('scaler_multiclass.pkl')
     feature_names = joblib.load('feature_names_multiclass.pkl')
     print("Multi-class model and helper files loaded successfully.")
 except FileNotFoundError:
-    print("Error: Multi-class model files not found. Please run the updated training notebook first.")
+    print("Error: Model files not found. Please run the training notebook and save the model files first.")
     model, scaler, feature_names = None, None, None
-# ---------------------
+
+# --- Helper Function for Stretch Goal 1 (Light Curve Plot) ---
+def create_light_curve(duration, depth):
+    """Generates a simplified, simulated light curve plot based on user input."""
+    try:
+        # Create a time series for the x-axis
+        time = np.linspace(-10, 10, 500)
+        # Start with a flat flux (brightness) of 1
+        flux = np.ones_like(time)
+        
+        # Calculate the start and end of the transit based on its duration
+        transit_start = -duration / 2
+        transit_end = duration / 2
+        # Create the dip in brightness. Depth is in parts per million, so we divide by 1e6.
+        flux[(time > transit_start) & (time < transit_end)] -= depth / 1e6
+
+        # Add a small amount of random noise to make it look more realistic
+        flux += np.random.normal(0, 0.00005, size=flux.shape)
+
+        # Create the plot with a dark theme
+        fig, ax = plt.subplots(figsize=(8, 4), facecolor='#161b22')
+        ax.plot(time, flux, '.', color='#79c0ff', markersize=3)
+        ax.set_facecolor('#161b22')
+        ax.set_xlabel("Time from Transit Center (Hours)", color='white')
+        ax.set_ylabel("Relative Brightness (Flux)", color='white')
+        ax.tick_params(axis='x', colors='white')
+        ax.tick_params(axis='y', colors='white')
+        for spine in ax.spines.values():
+            spine.set_edgecolor('white')
+
+        # Save the plot to a memory buffer instead of a file
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png', transparent=True)
+        buf.seek(0)
+        
+        # Encode the image in the buffer to a base64 string to embed directly in HTML
+        plot_url = base64.b64encode(buf.getvalue()).decode('utf8')
+        plt.close(fig) # Close the figure to free up memory
+        return plot_url
+    except Exception:
+        # If anything goes wrong, just return nothing
+        return None
+
+# --- Flask Routes ---
 
 @app.route('/')
 def home():
+    """Renders the homepage with the input form and model metrics."""
     if not feature_names:
         return "Error: Model not trained or files not found.", 500
-    return render_template('index.html', features=feature_names)
+    
+    # Stretch Goal 2: Load metrics for the homepage
+    try:
+        with open('metrics.json', 'r') as f:
+            metrics = json.load(f)
+    except FileNotFoundError:
+        metrics = None # Handle case where file might be missing
+    
+    return render_template('index.html', features=feature_names, metrics=metrics)
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    """Handles the form submission, makes a prediction, and renders the results page."""
     if not model:
         return "Error: Model not loaded.", 500
 
     try:
+        # Get data from the form and convert to a DataFrame
         data_dict = {feature: [float(request.form.get(feature))] for feature in feature_names}
         input_df = pd.DataFrame.from_dict(data_dict)
-        input_scaled = scaler.transform(input_df)
-        print("mode: ",model)
-        print("inpute df: ",input_df)
-        print("input scaled: ",input_scaled)
-        # --- CHANGE: Logic for multi-class prediction ---
-        prediction_num = model.predict(input_scaled)[0] # Get the predicted class (0, 1, or 2)
-        prediction_proba = model.predict_proba(input_scaled)[0] # Get probabilities for all classes
-        print("predict num: ",prediction_num)
-        print("pridiction_proba: ",prediction_proba)
-        # Define the class labels in the correct order
-        class_labels = ['False Positive', 'Planetary Candidate', 'Confirmed Exoplanet']
         
-        # Get the label and confidence for the predicted class
+        # Scale the features
+        input_scaled = scaler.transform(input_df)
+        
+        # Make a multi-class prediction
+        prediction_num = model.predict(input_scaled)[0]
+        prediction_proba = model.predict_proba(input_scaled)[0]
+
+        # Get the human-readable label and confidence score
+        class_labels = ['False Positive', 'Planetary Candidate', 'Confirmed Exoplanet']
         result_text = class_labels[prediction_num]
         confidence = prediction_proba[prediction_num] * 100
-        # -----------------------------------------------
-
+        
+        # --- Stretch Goal 1: Generate the light curve plot ---
+        duration = float(request.form.get('koi_duration'))
+        depth = float(request.form.get('koi_depth'))
+        plot_url = create_light_curve(duration, depth)
+        
+        # Pass all data to the results template
         return render_template('results.html', 
                                prediction=result_text, 
-                               confidence=f"{confidence:.2f}%")
+                               confidence=f"{confidence:.2f}%",
+                               confidence_raw=confidence, # For Stretch Goal 3 slider
+                               plot_url=plot_url)
 
     except (ValueError, TypeError):
-        return "Error: Invalid input. Please ensure all fields are filled with numbers.", 400
+        return "Error: Invalid input. Please ensure all fields are filled with valid numbers.", 400
     except Exception as e:
         return f"An unexpected error occurred: {e}", 500
 
+# --- Main execution block ---
 if __name__ == '__main__':
     app.run(debug=True)

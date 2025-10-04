@@ -1,0 +1,6 @@
+{
+    "accuracy": 0.9189754312598014,
+    "false_positive_precision": 0.9725330620549338,
+    "candidate_recall": 0.8106060606060606,
+    "confirmed_f1_score": 0.8850045998160073
+}
