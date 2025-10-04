@@ -2,3 +2,7 @@
 exoplanet_model_demo.pkl
 feature_names_demo.pkl
 scaler_demo.pkl
+exoplanet_model.pkl
+feature_names.pkl
+scaler.pkl
+

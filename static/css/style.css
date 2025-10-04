@@ -123,3 +123,8 @@ footer {
     font-size: 0.9rem;
     color: #8b949e;
 }
+.result-neutral {
+    background-color: #1e3a5f; /* A neutral blue background */
+    border: 1px solid #388bfd;
+    color: #79c0ff;
+}
