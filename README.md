@@ -1,5 +1,5 @@
 
-# Exoplanet Hunter API 🪐
+# Exoplanet Hunter Backend 🪐
 
 <p align="center">
   <img src="https://ichef.bbci.co.uk/images/ic/480xn/p0m6nj30.jpg.webp" alt="Exoplanet Hunter API Banner" width="100%">
