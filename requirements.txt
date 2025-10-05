@@ -2,7 +2,8 @@ flask
 Flask-CORS
 pandas
 numpy
-scikit-learn
+scikit-learn==1.6.1  # <-- Change this line
 joblib
 matplotlib
 shap
+gunicorn==22.0.0
