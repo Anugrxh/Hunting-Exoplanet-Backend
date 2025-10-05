@@ -2,6 +2,7 @@
 # Exoplanet Hunter API 🪐
 
 ![App Screenshot](https://ichef.bbci.co.uk/images/ic/480xn/p0m6nj30.jpg.webp)
+![App Screenshot](https://ichef.bbci.co.uk/images/ic/480xn/p0m6nj30.jpg.webp)
 
 A machine learning API built with Flask to classify celestial objects from the NASA Kepler dataset. This project serves as the backend for the Exoplanet Hunter application, providing predictions and rich, contextual data for frontend visualizations.
 
