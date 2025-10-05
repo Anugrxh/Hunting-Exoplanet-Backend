@@ -14,14 +14,22 @@ app = Flask(__name__)
 CORS(app)
 
 try:
+    # Load your ML models
     model = joblib.load('model_multiclass.pkl')
     scaler = joblib.load('scaler_multiclass.pkl')
     feature_names = joblib.load('feature_names_multiclass.pkl')
-    print("Multi-class model and helper files loaded successfully.")
-except FileNotFoundError:
-    print("Error: Model files not found. Please run the training notebook and save the model files first.")
-    model, scaler, feature_names = None, None, None
+    
+    # --- NEW: Load the famous exoplanets from the JSON file ---
+    with open('famous_exoplanets.json', 'r') as f:
+        FAMOUS_EXOPLANETS = json.load(f)
+    # -----------------------------------------------------------
+    
+    print("All model and data files loaded successfully.")
 
+except FileNotFoundError as e:
+    print(f"Error: A required file was not found: {e}")
+    # Set to None so the app can still start and show an error
+    model, scaler, feature_names, FAMOUS_EXOPLANETS = None, None, None, None
 
 def create_light_curve(duration, depth):
     """Generates a simplified, simulated light curve plot based on user input."""
@@ -96,10 +104,76 @@ def predict():
         depth = data.get('koi_depth', 0)
         plot_url = create_light_curve(duration, depth)
 
+         # --- NEW: Calculate data for the visualization ---
+        
+        # 1. Determine Star Color from Temperature (koi_steff)
+        steff = data.get('koi_steff', 5800) # Default to sun-like temperature
+        star_color = "#FFD700" # Default yellow
+        if steff <= 3700: star_color = "#FF6347"  # Red Dwarf
+        elif steff <= 5200: star_color = "#FFA500" # Orange Dwarf
+        elif steff <= 6000: star_color = "#FFD700" # Yellow Dwarf (Sun-like)
+        elif steff <= 7500: star_color = "#FFFFE0" # Yellow-White
+        elif steff > 7500: star_color = "#ADD8E6"   # Blue
+            
+        # 2. Get Planet and Star Radii for relative size
+        # We'll use koi_prad (planet radius) and a stellar radius (koi_srad, if available)
+        # For simplicity in UI, we'll keep the star size fixed and scale the planet
+        planet_size = data.get('koi_prad', 1) # Planet radius in Earth radii
+
+        # 3. Calculate relative orbital distance from orbital period (koi_period)
+        # A simple logarithmic scale makes the visualization look good for a wide range of periods
+        period = data.get('koi_period', 0)
+        # The log scale prevents planets with very long periods from being pushed too far out
+        orbital_distance = 50 + 40 * np.log10(period + 1) if period > 0 else 50
+        
+        visualization_data = {
+            "star_color": star_color,
+            "planet_size": min(max(planet_size, 0.5), 15), # Clamp size for better visuals
+            "orbital_distance": min(orbital_distance, 200) # Clamp distance
+        }
+        # --------------------------------------------------
+
+        # --- NEW: Calculate Habitable Zone Status ---
+        insolation = data.get('koi_insol', 0) # Get insolation flux from input data
+        habitable_zone_status = "Unknown"
+        
+        if insolation > 1.1:
+            habitable_zone_status = "Too Hot"
+        elif insolation >= 0.35:
+            habitable_zone_status = "Habitable Zone"
+        elif insolation > 0:
+            habitable_zone_status = "Too Cold"
+
+        # -----------------------------------------------
+
+               # --- NEW: Find the closest known exoplanet for comparison ---
+        user_period = data.get('koi_period', 0)
+        user_prad = data.get('koi_prad', 0)
+        
+        # Find the planet with the smallest difference in orbital period
+        best_match = min(FAMOUS_EXOPLANETS, key=lambda x: abs(x['koi_period'] - user_period))
+        
+        # Create a human-readable comparison string
+        comparison_text = (
+            f"Its orbital period of {user_period:.1f} days is similar to {best_match['name']}, "
+            f"which orbits its star in {best_match['koi_period']:.1f} days."
+        )
+
+        comparison_data = {
+            "name": best_match['name'],
+            "description": best_match['description'],
+            "text": comparison_text
+        }
+        # -----------------------------------------------------------
+
+        # Add the comparison data to your JSON response
         return jsonify({
             "prediction": result_text,
             "confidence": f"{confidence:.2f}%",
-            "plot_url":plot_url
+            "plot_url": plot_url,
+            "visualization_data": visualization_data,
+            "habitable_zone_status": habitable_zone_status,
+            "comparison_data": comparison_data # Add this new key
         })
 
     except (ValueError, KeyError) as e:

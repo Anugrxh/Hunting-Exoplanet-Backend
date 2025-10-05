@@ -1,0 +1,26 @@
+[
+    {
+        "name": "55 Cancri e",
+        "description": "A 'Super-Earth' that orbits its star in just 18 hours and may have a surface of molten lava.",
+        "koi_period": 0.73,
+        "koi_prad": 1.9
+    },
+    {
+        "name": "TRAPPIST-1e",
+        "description": "An Earth-sized planet in the habitable zone of an ultra-cool dwarf star, part of a system with seven rocky planets.",
+        "koi_period": 6.1,
+        "koi_prad": 0.92
+    },
+    {
+        "name": "Kepler-186f",
+        "description": "The first Earth-sized planet discovered in the habitable zone of another star, often called Earth's 'cousin'.",
+        "koi_period": 129.9,
+        "koi_prad": 1.17
+    },
+    {
+        "name": "HD 189733b",
+        "description": "A 'Hot Jupiter' known for its deep blue color, caused by a rain of molten glass whipping through its atmosphere.",
+        "koi_period": 2.2,
+        "koi_prad": 13.0
+    }
+]
