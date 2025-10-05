@@ -1,5 +1,8 @@
-Flask
+flask
+Flask-CORS
 pandas
+numpy
 scikit-learn
 joblib
-numpy
+matplotlib
+shap

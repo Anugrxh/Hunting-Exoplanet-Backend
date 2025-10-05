@@ -4,6 +4,8 @@ import joblib
 import pandas as pd
 import numpy as np
 import json 
+
+import shap 
 import matplotlib
 matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
@@ -25,11 +27,13 @@ try:
     # -----------------------------------------------------------
     
     print("All model and data files loaded successfully.")
+    explainer = shap.TreeExplainer(model)
+    print("SHAP explainer created successfully.")
 
 except FileNotFoundError as e:
     print(f"Error: A required file was not found: {e}")
     # Set to None so the app can still start and show an error
-    model, scaler, feature_names, FAMOUS_EXOPLANETS = None, None, None, None
+    model, scaler, feature_names, FAMOUS_EXOPLANETS, explainer = None, None, None, None, None
 
 def create_light_curve(duration, depth):
     """Generates a simplified, simulated light curve plot based on user input."""
@@ -91,8 +95,9 @@ def predict():
         
         input_df = pd.DataFrame([data])
         input_df = input_df[feature_names]
-        
+        print("input_df: ",input_df)
         input_scaled = scaler.transform(input_df)
+        print("input scaled: ",input_scaled)
         
         prediction_num = model.predict(input_scaled)[0]
         prediction_proba = model.predict_proba(input_scaled)[0]
@@ -146,7 +151,7 @@ def predict():
 
         # -----------------------------------------------
 
-               # --- NEW: Find the closest known exoplanet for comparison ---
+        # --- NEW: Find the closest known exoplanet for comparison ---
         user_period = data.get('koi_period', 0)
         user_prad = data.get('koi_prad', 0)
         
@@ -164,8 +169,36 @@ def predict():
             "description": best_match['description'],
             "text": comparison_text
         }
-        # -----------------------------------------------------------
+        shap_values = explainer.shap_values(input_scaled)
+        shap_values_for_prediction = None
+        
+        if isinstance(shap_values, list) and len(shap_values) == 3:
+            shap_values_for_prediction = shap_values[prediction_num][0]
+        elif isinstance(shap_values, np.ndarray) and shap_values.ndim == 3:
+            shap_values_for_prediction = shap_values[0, :, prediction_num]
+        else:
+            return jsonify({"error": "Unexpected SHAP value format."}), 500
 
+        print("shap values for prediction: ",shap_values_for_prediction)
+        feature_shap_values = sorted(
+            zip(feature_names, shap_values_for_prediction),
+            key=lambda x: abs(x[1]), 
+            reverse=True
+        )
+        
+        top_features = []
+        for feature, shap_value in feature_shap_values[:4]:
+            top_features.append({
+                "feature": feature.replace('_', ' ').title(),
+                "value": data.get(feature, 'N/A'),
+                "contribution": "positive" if shap_value > 0 else "negative"
+            })
+            
+        explanation_data = {
+            "predicted_class": result_text,
+            "top_features": top_features
+        }
+        # -----------------------------------------------
         # Add the comparison data to your JSON response
         return jsonify({
             "prediction": result_text,
@@ -173,7 +206,8 @@ def predict():
             "plot_url": plot_url,
             "visualization_data": visualization_data,
             "habitable_zone_status": habitable_zone_status,
-            "comparison_data": comparison_data # Add this new key
+            "comparison_data": comparison_data, # Add this new key
+            "explanation_data": explanation_data
         })
 
     except (ValueError, KeyError) as e:
