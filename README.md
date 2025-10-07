@@ -99,7 +99,7 @@ To deploy this project run
 ```
 
 
-## 🔗 👨‍💻 Collaborators
+## 🔗 👨‍💻 Contributers
 
 - #### Anugrah M V
   [![portfolio](https://img.shields.io/badge/my_portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://anugrah-m-v.netlify.app/)
@@ -108,5 +108,4 @@ To deploy this project run
 
 - ### Mishab 
   [![portfolio](https://img.shields.io/badge/my_portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://github.com/mishab339/)
-
   [![linkedin](https://img.shields.io/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/muhammed-mishab-p-b1497b293/)
