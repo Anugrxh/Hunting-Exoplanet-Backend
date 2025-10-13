@@ -31,27 +31,18 @@ FEATURE_NAME_MAP = {
 }
 
 try:
-    # Load your ML models
     model = joblib.load('model_multiclass.pkl')
     scaler = joblib.load('scaler_multiclass.pkl')
     feature_names = joblib.load('feature_names_multiclass.pkl')
     
-    # --- NEW: Load the famous exoplanets from the JSON file ---
     with open('famous_exoplanets.json', 'r') as f:
         FAMOUS_EXOPLANETS = json.load(f)
-    # -----------------------------------------------------------
-    
-    print("All model and data files loaded successfully.")
     explainer = shap.TreeExplainer(model)
-    print("SHAP explainer created successfully.")
 
 except FileNotFoundError as e:
-    print(f"Error: A required file was not found: {e}")
-    # Set to None so the app can still start and show an error
     model, scaler, feature_names, FAMOUS_EXOPLANETS, explainer = None, None, None, None, None
 
 def create_light_curve(duration, depth):
-    """Generates a simplified, simulated light curve plot based on user input."""
     try:
         time = np.linspace(-10, 10, 500)
         flux = np.ones_like(time)
@@ -88,7 +79,6 @@ def home():
 
 @app.route('/metrics')
 def get_metrics():
-    """Reads the metrics file and returns it as JSON."""
     try:
         with open('metrics.json', 'r') as f:
             metrics_data = json.load(f)
@@ -110,9 +100,7 @@ def predict():
         
         input_df = pd.DataFrame([data])
         input_df = input_df[feature_names]
-        print("input_df: ",input_df)
         input_scaled = scaler.transform(input_df)
-        print("input scaled: ",input_scaled)
         
         prediction_num = model.predict(input_scaled)[0]
         prediction_proba = model.predict_proba(input_scaled)[0]
@@ -124,37 +112,26 @@ def predict():
         depth = data.get('koi_depth', 0)
         plot_url = create_light_curve(duration, depth)
 
-         # --- NEW: Calculate data for the visualization ---
-        
-        # 1. Determine Star Color from Temperature (koi_steff)
-        steff = data.get('koi_steff', 5800) # Default to sun-like temperature
-        star_color = "#FFD700" # Default yellow
-        if steff <= 3700: star_color = "#FF6347"  # Red Dwarf
-        elif steff <= 5200: star_color = "#FFA500" # Orange Dwarf
-        elif steff <= 6000: star_color = "#FFD700" # Yellow Dwarf (Sun-like)
-        elif steff <= 7500: star_color = "#FFFFE0" # Yellow-White
-        elif steff > 7500: star_color = "#ADD8E6"   # Blue
+        steff = data.get('koi_steff', 5800) 
+        star_color = "#FFD700" 
+        if steff <= 3700: star_color = "#FF6347"  
+        elif steff <= 5200: star_color = "#FFA500" 
+        elif steff <= 6000: star_color = "#FFD700" 
+        elif steff <= 7500: star_color = "#FFFFE0" 
+        elif steff > 7500: star_color = "#ADD8E6"  
             
-        # 2. Get Planet and Star Radii for relative size
-        # We'll use koi_prad (planet radius) and a stellar radius (koi_srad, if available)
-        # For simplicity in UI, we'll keep the star size fixed and scale the planet
-        planet_size = data.get('koi_prad', 1) # Planet radius in Earth radii
+        planet_size = data.get('koi_prad', 1)
 
-        # 3. Calculate relative orbital distance from orbital period (koi_period)
-        # A simple logarithmic scale makes the visualization look good for a wide range of periods
         period = data.get('koi_period', 0)
-        # The log scale prevents planets with very long periods from being pushed too far out
         orbital_distance = 50 + 40 * np.log10(period + 1) if period > 0 else 50
         
         visualization_data = {
             "star_color": star_color,
-            "planet_size": min(max(planet_size, 0.5), 15), # Clamp size for better visuals
-            "orbital_distance": min(orbital_distance, 200) # Clamp distance
+            "planet_size": min(max(planet_size, 0.5), 15), 
+            "orbital_distance": min(orbital_distance, 200) 
         }
-        # --------------------------------------------------
 
-        # --- NEW: Calculate Habitable Zone Status ---
-        insolation = data.get('koi_insol', 0) # Get insolation flux from input data
+        insolation = data.get('koi_insol', 0) 
         habitable_zone_status = "Unknown"
         
         if insolation > 1.1:
@@ -164,16 +141,11 @@ def predict():
         elif insolation > 0:
             habitable_zone_status = "Too Cold"
 
-        # -----------------------------------------------
-
-        # --- NEW: Find the closest known exoplanet for comparison ---
         user_period = data.get('koi_period', 0)
         user_prad = data.get('koi_prad', 0)
         
-        # Find the planet with the smallest difference in orbital period
         best_match = min(FAMOUS_EXOPLANETS, key=lambda x: abs(x['koi_period'] - user_period))
         
-        # Create a human-readable comparison string
         comparison_text = (
             f"Its orbital period of {user_period:.1f} days is similar to {best_match['name']}, "
             f"which orbits its star in {best_match['koi_period']:.1f} days."
@@ -194,7 +166,6 @@ def predict():
         else:
             return jsonify({"error": "Unexpected SHAP value format."}), 500
 
-        print("shap values for prediction: ",shap_values_for_prediction)
         feature_shap_values = sorted(
             zip(feature_names, shap_values_for_prediction),
             key=lambda x: abs(x[1]), 
@@ -204,9 +175,7 @@ def predict():
         top_features = []
         for feature, shap_value in feature_shap_values[:4]:
             top_features.append({
-                # --- CHANGE: Use the dictionary to get the friendly name ---
-                "feature": FEATURE_NAME_MAP.get(feature, feature), # .get() safely falls back to the original name
-                # -----------------------------------------------------------
+                "feature": FEATURE_NAME_MAP.get(feature, feature),
                 "value": data.get(feature, 'N/A'),
                 "contribution": "positive" if shap_value > 0 else "negative"
             })
@@ -215,15 +184,14 @@ def predict():
             "predicted_class": result_text,
             "top_features": top_features
         }
-        # -----------------------------------------------
-        # Add the comparison data to your JSON response
+
         return jsonify({
             "prediction": result_text,
             "confidence": f"{confidence:.2f}%",
             "plot_url": plot_url,
             "visualization_data": visualization_data,
             "habitable_zone_status": habitable_zone_status,
-            "comparison_data": comparison_data, # Add this new key
+            "comparison_data": comparison_data, 
             "explanation_data": explanation_data
         })
 
