@@ -15,6 +15,21 @@ import base64
 app = Flask(__name__)
 CORS(app)
 
+FEATURE_NAME_MAP = {
+    'koi_score': 'Disposition Score',
+    'koi_fpflag_nt': 'Not Transit-Like Flag',
+    'koi_fpflag_ss': 'Stellar Eclipse Flag',
+    'koi_fpflag_co': 'Centroid Offset Flag',
+    'koi_period': 'Orbital Period',
+    'koi_duration': 'Transit Duration',
+    'koi_depth': 'Transit Depth',
+    'koi_prad': 'Planet Radius',
+    'koi_teq': 'Equilibrium Temperature',
+    'koi_insol': 'Insolation Flux',
+    'koi_model_snr': 'Signal-to-Noise Ratio',
+    'koi_steff': 'Stellar Temperature'
+}
+
 try:
     # Load your ML models
     model = joblib.load('model_multiclass.pkl')
@@ -189,7 +204,9 @@ def predict():
         top_features = []
         for feature, shap_value in feature_shap_values[:4]:
             top_features.append({
-                "feature": feature.replace('_', ' ').title(),
+                # --- CHANGE: Use the dictionary to get the friendly name ---
+                "feature": FEATURE_NAME_MAP.get(feature, feature), # .get() safely falls back to the original name
+                # -----------------------------------------------------------
                 "value": data.get(feature, 'N/A'),
                 "contribution": "positive" if shap_value > 0 else "negative"
             })
